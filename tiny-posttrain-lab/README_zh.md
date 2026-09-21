@@ -50,6 +50,7 @@ Windows 上 `bitsandbytes` 若安装失败，可改用 WSL2，或在配置里关
 | 实验 | 模型 | 方法 | 显存峰值 | 指标 | 备注 |
 |------|------|------|----------|------|------|
 | 2026-09-sft-baseline | Qwen2.5-0.5B-Instruct | SFT+LoRA r=16 | allocated 1.87 / reserved 4.89 GB | train_loss 1.39 / 345s | 首条基线；含 base vs LoRA 生成对比；见 `experiments/2026-09-sft-baseline/notes.md` |
+| 2026-09-dpo-from-sft | Qwen2.5-0.5B-Instruct | DPO（续 SFT adapter） | allocated 2.76 / reserved 3.56 GB | accuracy 0.455（随机=0.5）/ 336s | 未产生可测偏好提升；**并发现一个静默训练失效的 bug**，见 `experiments/2026-09-dpo-from-sft/notes.md` |
 
 ## 局限
 

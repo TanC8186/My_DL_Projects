@@ -1,9 +1,15 @@
-# 8GB-friendly DPO (after SFT is understood)
-# Prefer loading an SFT/LoRA-merged model later; this config can start from instruct weights.
+# 8GB-friendly DPO (SFT -> DPO pipeline)
+#
+# `start_from` makes the run CONTINUE an existing LoRA adapter instead of creating
+# a new one, so this is the real post-training chain: SFT adapter -> DPO on top.
+# TRL obtains the reference logits by calling disable_adapter(), so no second copy
+# of the base model is needed. If `start_from` is absent, the `lora` block below
+# creates a fresh adapter starting from the instruct weights.
 
-experiment_id: 2026-09-dpo-wip
+experiment_id: 2026-09-dpo-from-sft
 method: dpo
-notes: WIP — run after SFT baseline. Keep max_prompt_length short on 8GB.
+notes: Continues the SFT LoRA adapter on a 1000-row UltraFeedback slice.
+start_from: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-09-sft-baseline/output/final
 
 model:
   model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
@@ -12,6 +18,7 @@ model:
   attn_implementation: sdpa
 
 lora:
+  # Used only when `start_from` is absent (fresh adapter).
   enabled: true
   r: 16
   alpha: 32
@@ -27,7 +34,7 @@ data:
   max_length: 512             # prompt + completion budget
 
 training:
-  output_dir: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-09-dpo-wip/output
+  output_dir: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-09-dpo-from-sft/output
   num_train_epochs: 1
   per_device_train_batch_size: 1
   gradient_accumulation_steps: 8

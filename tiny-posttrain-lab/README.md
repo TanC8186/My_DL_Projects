@@ -62,6 +62,7 @@ Local open-source references (not vendored as our code):
 | Exp ID | Model | Method | VRAM peak | Reward / eval | Notes |
 |--------|-------|--------|-----------|---------------|-------|
 | 2026-09-sft-baseline | Qwen2.5-0.5B-Instruct | SFT+LoRA r=16 | 1.87 GB allocated / 4.89 GB reserved | train_loss 1.39, 345 s | first baseline + base-vs-LoRA generation comparison |
+| 2026-09-dpo-from-sft | Qwen2.5-0.5B-Instruct | DPO (continues the SFT adapter) | 2.76 GB allocated / 3.56 GB reserved | preference accuracy 0.455 (chance = 0.5), 336 s | no measurable preference gain; surfaced a silent no-op training bug |
 
 ## Limitations
 
@@ -72,11 +73,11 @@ Local open-source references (not vendored as our code):
 ## Roadmap
 
 - [x] Repo skeleton + 8GB SFT config
-- [ ] SFT baseline on local Qwen weights
-- [ ] DPO small run + preference data slice
+- [x] SFT baseline on local Qwen weights
+- [x] DPO small run + preference data slice
 - [ ] GRPO + verifiable math reward ablation
-- [ ] Memory estimate utility + tests
-- [ ] Write `docs/8gb-memory-guide.md` from measured numbers
+- [x] Memory estimate utility + tests
+- [x] Write `docs/8gb-memory-guide.md` from measured numbers
 
 ## License
 
