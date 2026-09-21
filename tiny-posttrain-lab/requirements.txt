@@ -1,0 +1,28 @@
+# Local 8GB lab — install on Windows PowerShell
+# Tested working combo (2026-09 baseline on RTX 4060 Laptop 8GB):
+#   Base: conda env dl_env (Python 3.10) + torch 2.5.1+cu124
+#   venv: python -m venv .venv --system-site-packages  (reuse local CUDA torch)
+#
+# Before training, set:
+#   $env:USE_TF = "0"
+#   $env:USE_FLAX = "0"
+#   $env:HF_ENDPOINT = "https://hf-mirror.com"   # optional, CN network
+#
+# Do NOT install transformers 5.x / trl 1.x together on this machine —
+# `from trl import SFTTrainer` can hard-crash (0xC0000005).
+# Also avoid importing a broken TensorFlow inside dl_env (NumPy 2.x conflict).
+
+transformers==4.55.2
+datasets==3.6.0
+accelerate==1.6.0
+peft==0.17.1
+trl==0.21.0
+pyyaml>=6.0
+pandas>=2.0.0
+numpy>=1.26.0
+tqdm>=4.66.0
+
+# Optional / platform-sensitive:
+# bitsandbytes>=0.43.0   # 4-bit QLoRA; may fail on Windows — see README
+# flash-attn             # optional; needs matching CUDA/torch
+# tensorboard            # if report_to: ["tensorboard"]

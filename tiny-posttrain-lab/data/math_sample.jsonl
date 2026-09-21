@@ -1,0 +1,10 @@
+{"prompt": "What is 12 + 30? End your response with the number only.", "answer": "42"}
+{"prompt": "Compute 7 * 6. End with the number.", "answer": "42"}
+{"prompt": "A book has 120 pages. You read 45. How many pages left? End with the number.", "answer": "75"}
+{"prompt": "What is 100 - 37? End with the number.", "answer": "63"}
+{"prompt": "Solve: 9 * 9. End with the number.", "answer": "81"}
+{"prompt": "There are 5 bags with 8 apples each. How many apples in total? End with the number.", "answer": "40"}
+{"prompt": "What is 250 + 250? End with the number.", "answer": "500"}
+{"prompt": "Compute 144 / 12. End with the number.", "answer": "12"}
+{"prompt": "What is 2^5? End with the number.", "answer": "32"}
+{"prompt": "A train travels 60 km/h for 3 hours. Distance? End with the number.", "answer": "180"}

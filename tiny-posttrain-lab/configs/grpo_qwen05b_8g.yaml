@@ -1,0 +1,51 @@
+# 8GB-friendly GRPO sketch (TRL GRPOTrainer)
+# Verifiable reward (math). Expect OOM if generations/length are too large.
+
+experiment_id: 2026-09-grpo-math-wip
+method: grpo
+notes: WIP — start with tiny generations. Reward accuracy on simple math.
+
+model:
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  torch_dtype: bfloat16
+  load_in_4bit: false
+  attn_implementation: sdpa
+
+lora:
+  enabled: true
+  r: 8                        # smaller rank to save VRAM during RL
+  alpha: 16
+  dropout: 0.0
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+data:
+  # Provide a small jsonl with prompts + ground-truth answers
+  dataset_path: E:/My_DL_Projects/tiny-posttrain-lab/data/math_sample.jsonl
+  max_samples: 200
+  max_prompt_length: 128
+  max_completion_length: 128  # keep short on 8GB
+
+grpo:
+  num_generations: 2          # 4+ often OOM on 8GB with longer completions
+  temperature: 1.0
+  beta: 0.0                   # no KL vs ref if 0 (saves a forward); set >0 later
+  reward_function: accuracy   # see src/my_lab/rewards.py
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 4
+  learning_rate: 1.0e-6
+  num_train_epochs: 1
+  logging_steps: 1
+  save_steps: 100
+  gradient_checkpointing: true
+  bf16: true
+  report_to: []
+  seed: 42
+
+output_dir: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-09-grpo-math-wip/output
+
+if_oom:
+  - lower num_generations to 2
+  - lower max_completion_length
+  - enable load_in_4bit
+  - reduce per_device_train_batch_size to 1 (already set)
+  - use smaller model or shorter prompts

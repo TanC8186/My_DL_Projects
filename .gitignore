@@ -1,0 +1,24 @@
+# Root ignore for the monorepo workspace
+# Keep third-party clones out of *our* history if you prefer; comment out
+# the next line if you intentionally want to vendor references.
+
+references/
+*.log
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+
+# IDE / editor
+.idea/
+.vscode/
+
+# Never commit large model weights (qwen/ may live here locally)
+qwen/
+*.safetensors
+*.bin
+*.pt
+
+# Lab outputs (ignore everything in output/ except the tiny raw metrics file)
+tiny-posttrain-lab/experiments/**/output/**
+!tiny-posttrain-lab/experiments/**/output/train_metrics.txt

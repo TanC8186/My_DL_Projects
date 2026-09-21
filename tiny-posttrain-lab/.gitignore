@@ -1,0 +1,37 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Experiment outputs (keep notes/csv small ones if you want; ignore checkpoints)
+experiments/**/output/**
+# ...but keep the tiny raw metrics file under version control
+!experiments/**/output/train_metrics.txt
+experiments/**/runs/
+*.safetensors
+*.bin
+*.pt
+*.ckpt
+wandb/
+lightning_logs/
+tensorboard/
+
+# Data blobs
+data/**/*.parquet
+data/**/*.bin
+!data/**/*.jsonl
+!data/**/*.md
+!data/**/*.csv
+
+# Secrets / local
+.env
+*.log
+
+# OS
+Thumbs.db
+.DS_Store

@@ -1,0 +1,47 @@
+# 8GB-friendly DPO (after SFT is understood)
+# Prefer loading an SFT/LoRA-merged model later; this config can start from instruct weights.
+
+experiment_id: 2026-09-dpo-wip
+method: dpo
+notes: WIP — run after SFT baseline. Keep max_prompt_length short on 8GB.
+
+model:
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  torch_dtype: bfloat16
+  load_in_4bit: false
+  attn_implementation: sdpa
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+data:
+  # Public preference slice — replace with your SFT-related pairs when ready
+  dataset_name: trl-lib/ultrafeedback_binarized
+  dataset_split: train
+  max_samples: 1000
+  max_prompt_length: 256
+  max_length: 512             # prompt + completion budget
+
+training:
+  output_dir: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-09-dpo-wip/output
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 5.0e-6
+  beta: 0.1                   # DPO temperature
+  loss_type: sigmoid
+  gradient_checkpointing: true
+  bf16: true
+  logging_steps: 5
+  save_steps: 200
+  save_total_limit: 2
+  report_to: []
+  seed: 42
+
+dpo_notes:
+  why_cheaper_than_ppo: No critic / no separate reward model training loop; still memory-heavy due to policy+ref forward.
+  if_oom: reduce max_length, enable load_in_4bit, or shrink LoRA rank.
