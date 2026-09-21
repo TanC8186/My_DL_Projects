@@ -61,10 +61,37 @@ Windows 上 `bitsandbytes` 若安装失败，可改用 WSL2，或在配置里关
 
 ## 建议路线（与实习准备对齐）
 
-1. **本周**：跑通 SFT（0.5B），把显存、loss、样例生成写入 `experiments/`
-2. **随后**：DPO 小规模 → GRPO + 可验证 reward
-3. **并行**：精读 `../references/trl` 与 `docs/` 中的 verl/torchtitan 笔记
-4. **投递前**：补全结果表、局限、面试问答
+1. ~~**本周**：跑通 SFT（0.5B），把显存、loss、样例生成写入 `experiments/`~~ ✅
+2. ~~**随后**：DPO 小规模 → GRPO + 可验证 reward~~ ✅
+3. ~~**并行**：精读 `../references/trl`~~ ✅ → 结论见 [`docs/trl-reading-notes.md`](./docs/trl-reading-notes.md)
+4. **投递前**：把下面的「能讲什么」练成口述，并准备被追问的细节
+
+## 能讲什么（面试素材）
+
+这些不是"我跑了个脚本"，而是**有实测证据的具体结论**：
+
+**机制层面**（对照 TRL 源码，含行号，见 `docs/trl-reading-notes.md`）
+
+- SFT 的 loss 默认算在**全部 token** 上（含 prompt）。`completion_only_loss` 只是开关，
+  没有 `completion_mask`/`assistant_masks` 列时它什么都不 mask
+- LoRA 省的是**梯度和优化器状态**（约 5 GB → 12 MB），权重本身不省。
+  能精确手算参数量：GQA 下 `k_proj`/`v_proj` 的 `out` 是 `num_kv_heads × head_dim`
+- DPO 的 `logps` 是**按 token 求和**，长度有偏；靠两次相减抵消模型无关部分
+- `ref_model=None` 时参考模型是**原始底座**，不是 SFT 模型（`disable_adapter()` 禁用所有 LoRA）
+- GRPO 的 advantage 是**组内相对** `(r_i − mean)/std`，所以组内奖励全同时无梯度
+
+**工程层面**（三个真实 bug，都有完整证据链）
+
+- **静默失效**：`PeftModel.from_pretrained` 的 `is_trainable` 默认 `False` → 优化器为空 →
+  权重永不更新，但 `loss` 在降、`grad_norm` 非零。靠 SHA256 比对产物才发现
+- **框架陷阱**：TRL 开了 gradient checkpointing 却不在生成前关掉，污染 GRPO 生成，
+  奖励恒 0。用"只改模型状态"的二分法定位
+- **训练/评测不一致**：一个脚本套 chat template、另一个没套，不报错但结果无法解释
+
+**显存层面**（`docs/8gb-memory-guide.md`）
+
+- `reserved` 才是 OOM 判据（SFT：allocated 1.87 但 reserved 4.89 GB）
+- `reserved` 随运行时长漂移，跨实验比显存**必须固定步数**，否则结论是假的
 
 ## 许可
 

@@ -47,9 +47,13 @@ If `bitsandbytes` fails on Windows, try WSL2 or set `load_in_4bit: false` and us
 | `scripts/` | Entrypoints: SFT / DPO / GRPO |
 | `src/my_lab/` | Reusable code: data, rewards, memory estimate |
 | `experiments/` | One folder per run: notes + results |
-| `docs/` | Memory guide, dataflow notes |
+| `docs/` | Memory guide, TRL source-reading notes |
 | `tests/` | CPU unit tests (no GPU required) |
 | `data/` | Tiny sample / download instructions (no large blobs) |
+
+Read the TRL source conclusions in [`docs/trl-reading-notes.md`](./docs/trl-reading-notes.md)
+(SFT token masking, LoRA parameter arithmetic, DPO log-ratio, GRPO advantage), and the
+per-experiment evidence in `experiments/*/notes.md`.
 
 Local open-source references (not vendored as our code):
 

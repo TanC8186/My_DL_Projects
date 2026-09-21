@@ -32,7 +32,8 @@ E:\My_DL_Projects\                     # 工作区根（已 git init）
     │   └── test_rewards_and_memory.py
     ├── docs\
     │   ├── 8gb-memory-guide.md
-    │   └── project-layout.md
+    │   ├── project-layout.md
+    │   └── trl-reading-notes.md        # TRL 源码精读（SFT loss / LoRA / DPO / GRPO）
     ├── data\
     │   ├── README.md
     │   └── math_sample.jsonl          # GRPO 用小样例
@@ -60,11 +61,21 @@ E:\My_DL_Projects\                     # 工作区根（已 git init）
 
 ## 与 TRL 源码怎么对照
 
+> ⚠️ `references/trl` 是 **1.14.0.dev0**（main 分支），而实际安装运行的是 **0.21.0**。
+> 两者差一个大版本，`SFTTrainer` 的 loss 路径、`GRPOConfig` 字段都可能对不上。
+> **读源码前先确认版本。**
+
+已经整理好的结论在 [`trl-reading-notes.md`](./trl-reading-notes.md)，含行号引用。
+下面是可以自己动手复现的检索入口：
+
 | 你要搞清的问题 | 建议在 references/trl 里搜 |
 |----------------|----------------------------|
-| SFT loss 在哪些 token 上算 | `SFTTrainer`, `train_dataset` |
-| DPO loss | `DPOTrainer`, `dpo_loss` |
-| GRPO advantage | `GRPOTrainer`, `num_generations` |
+| SFT loss 在哪些 token 上算 | `SFTTrainer`, `DataCollatorForLanguageModeling`, `completion_only_loss` |
+| DPO loss | `DPOTrainer`, `dpo_loss`, `logratios` |
+| DPO 参考模型是谁 | `null_ref_context`, `disable_adapter` |
+| GRPO advantage | `GRPOTrainer`, `mean_grouped_rewards`, `num_generations` |
+| GRPO 裁剪 | `coef_1`, `coef_2`, `epsilon_low` |
+| reward 函数怎么被调用 | `_calculate_rewards` |
 | CLI 入口 | `examples/` |
 
 笔记写到 `docs/` 或 `experiments/*/notes.md`，**不要改 references 里的第三方代码**（要改就 fork 到你自己的实验分支，并写明目的）。
