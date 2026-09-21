@@ -55,6 +55,10 @@ Read the TRL source conclusions in [`docs/trl-reading-notes.md`](./docs/trl-read
 (SFT token masking, LoRA parameter arithmetic, DPO log-ratio, GRPO advantage), and the
 per-experiment evidence in `experiments/*/notes.md`.
 
+For a file-by-file, line-by-line walkthrough of this project's own code — what each
+piece does, why it is written that way, and what went wrong — start at
+[`docs/walkthrough/00-index.md`](./docs/walkthrough/00-index.md) (10 parts).
+
 Local open-source references (not vendored as our code):
 
 - `../references/trl` — Hugging Face TRL (read-only reference)

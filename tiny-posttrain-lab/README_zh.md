@@ -39,9 +39,19 @@ Windows 上 `bitsandbytes` 若安装失败，可改用 WSL2，或在配置里关
 | `scripts/` | 训练入口 |
 | `src/my_lab/` | 数据、reward、显存估算等可复用代码 |
 | `experiments/` | 每次实验一个文件夹（笔记 + 结果） |
-| `docs/` | 精读笔记、显存指南 |
+| `docs/` | 精读笔记、显存指南、[逐文件代码梳理](./docs/walkthrough/00-index.md) |
 | `tests/` | CPU 单测 |
 | `data/` | 小样例与下载说明（不提交大文件） |
+
+## 文档导航
+
+| 想看什么 | 去哪 |
+|---------|------|
+| **每个文件的每段代码在干什么** | [`docs/walkthrough/`](./docs/walkthrough/00-index.md)（10 篇，从 00 开始读） |
+| TRL 源码怎么算 SFT loss / DPO loss / GRPO advantage | [`docs/trl-reading-notes.md`](./docs/trl-reading-notes.md) |
+| 8G 显存实测数据与 OOM 排查顺序 | [`docs/8gb-memory-guide.md`](./docs/8gb-memory-guide.md) |
+| 某个实验的具体结论与局限 | `experiments/*/notes.md` |
+| **怎么判断训练是不是真的在工作** | [`walkthrough/09`](./docs/walkthrough/09-experiments.md) |
 
 ## 结果
 

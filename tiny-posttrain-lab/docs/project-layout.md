@@ -33,7 +33,18 @@ E:\My_DL_Projects\                     # 工作区根（已 git init）
     ├── docs\
     │   ├── 8gb-memory-guide.md
     │   ├── project-layout.md
-    │   └── trl-reading-notes.md        # TRL 源码精读（SFT loss / LoRA / DPO / GRPO）
+    │   ├── trl-reading-notes.md        # TRL 源码精读（机制层）
+    │   └── walkthrough\                # 逐文件逐段代码梳理（代码层，10 篇）
+    │       ├── 00-index.md             #   全景 + 阅读顺序
+    │       ├── 01-environment.md       #   环境与工程配置
+    │       ├── 02-config-layer.md      #   配置层
+    │       ├── 03-helpers.md           #   工具层 my_lab/
+    │       ├── 04-train-sft.md         #   SFT 脚本
+    │       ├── 05-train-dpo.md         #   DPO 脚本
+    │       ├── 06-train-grpo.md        #   GRPO 脚本
+    │       ├── 07-infer-eval.md        #   推理、评测、数据生成
+    │       ├── 08-tests.md             #   测试
+    │       └── 09-experiments.md       #   实验记录与日志阅读
     ├── data\
     │   ├── README.md
     │   └── math_sample.jsonl          # GRPO 用小样例
@@ -79,3 +90,21 @@ E:\My_DL_Projects\                     # 工作区根（已 git init）
 | CLI 入口 | `examples/` |
 
 笔记写到 `docs/` 或 `experiments/*/notes.md`，**不要改 references 里的第三方代码**（要改就 fork 到你自己的实验分支，并写明目的）。
+
+## 逐文件代码梳理
+
+上面是"机制层"的精读（TRL 内部怎么算）。如果要看**这个项目每个文件的每一段代码在干什么、
+为什么这么写**，看 [`walkthrough/`](./walkthrough/00-index.md) 系列，共 10 篇：
+
+| 篇 | 内容 |
+|----|------|
+| [00 全景与阅读指南](./walkthrough/00-index.md) | 目录树职责、数据流图、模块依赖、建议阅读顺序 |
+| [01 环境与工程配置](./walkthrough/01-environment.md) | `requirements.txt` / `pyproject.toml` / `.gitignore` / `env.ps1` |
+| [02 配置层](./walkthrough/02-config-layer.md) | `config.py` + 三个 YAML 的每个字段 |
+| [03 工具层](./walkthrough/03-helpers.md) | `rewards.py` / `memory.py` / `vram.py`，含 LoRA 参数量手算 |
+| [04 SFT 脚本](./walkthrough/04-train-sft.md) | 逐段解释，含 loss 掩码的连锁反应 |
+| [05 DPO 脚本](./walkthrough/05-train-dpo.md) | 含"静默失效 bug"的完整证据链 |
+| [06 GRPO 脚本](./walkthrough/06-train-grpo.md) | 含两个 bug 的二分定位过程 |
+| [07 推理与评测](./walkthrough/07-infer-eval.md) | `generate.py` / `eval_math.py` / `make_math_dataset.py` |
+| [08 测试](./walkthrough/08-tests.md) | 18 个 CPU 单测的设计思路 |
+| [09 实验记录与日志阅读](./walkthrough/09-experiments.md) | **怎么判断训练是不是真的在工作** |

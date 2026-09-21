@@ -36,6 +36,31 @@ def test_docs_referenced_by_readme_exist():
         assert (docs / name).exists(), f"missing doc referenced from the READMEs: {name}"
 
 
+def test_walkthrough_is_complete():
+    """The walkthrough is linked as a numbered series, so a missing part is a broken chain."""
+    walkthrough = ROOT / "docs" / "walkthrough"
+    expected = [
+        "00-index.md",
+        "01-environment.md",
+        "02-config-layer.md",
+        "03-helpers.md",
+        "04-train-sft.md",
+        "05-train-dpo.md",
+        "06-train-grpo.md",
+        "07-infer-eval.md",
+        "08-tests.md",
+        "09-experiments.md",
+    ]
+    missing = [name for name in expected if not (walkthrough / name).exists()]
+    assert not missing, f"walkthrough parts missing: {missing}"
+
+    # Every part except the index should be linked from the index, and the index
+    # should link to every other part, otherwise the series is not navigable.
+    index = (walkthrough / "00-index.md").read_text(encoding="utf-8")
+    unlinked = [name for name in expected[1:] if f"./{name}" not in index]
+    assert not unlinked, f"walkthrough parts not linked from the index: {unlinked}"
+
+
 def test_every_experiment_has_notes():
     """An experiment folder without notes.md is unreviewable, so treat it as a bug."""
     experiments = ROOT / "experiments"
