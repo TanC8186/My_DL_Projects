@@ -14,6 +14,45 @@ if str(_SRC) not in sys.path:
 
 from my_lab.config import ensure_dir, load_config  # noqa: E402
 from my_lab.rewards import accuracy_reward  # noqa: E402
+from my_lab.vram import format_peak_vram, peak_vram_gb, reset_peak_stats  # noqa: E402
+
+
+def build_zero_signal_guard(base_callback, patience: int = 20):
+    """Abort when GRPO has no learning signal.
+
+    `frac_reward_zero_std == 1.0` means every completion in every group got the
+    same reward, so all advantages are 0. loss and grad_norm are then exactly 0.0,
+    which reads as "training is stable" rather than "training is dead".
+
+    The usual cause is a prompt/format mismatch: if completions are truncated
+    (clipped_ratio ~ 1.0) the model never emits an answer and every reward is 0.
+    Aborting early matters because each step costs a full generation pass.
+    """
+
+    class ZeroSignalGuard(base_callback):
+        def __init__(self) -> None:
+            self.patience = patience
+            self.streak = 0
+
+        def on_log(self, args, state, control, logs=None, **kwargs):
+            if not logs or "frac_reward_zero_std" not in logs:
+                return
+            self.streak = self.streak + 1 if logs["frac_reward_zero_std"] >= 1.0 else 0
+
+            if self.streak >= self.patience:
+                print(
+                    f"\n[ABORT] reward std has been 0 for {self.streak} logged steps, so every "
+                    f"advantage is 0 and no learning can happen.\n"
+                    f"         clipped_ratio={logs.get('completions/clipped_ratio')} "
+                    f"mean_length={logs.get('completions/mean_length')} "
+                    f"reward={logs.get('reward')}\n"
+                    f"         Check that prompts carry the chat template and that "
+                    f"max_completion_length leaves room for the answer.\n",
+                    flush=True,
+                )
+                control.should_training_stop = True
+
+    return ZeroSignalGuard()
 
 
 def main() -> None:
@@ -22,8 +61,18 @@ def main() -> None:
         "--config",
         default=str(_ROOT / "configs" / "grpo_qwen05b_8g.yaml"),
     )
+    parser.add_argument(
+        "--adapter",
+        default=None,
+        help=(
+            "Existing LoRA adapter to continue training. Defaults to the config's "
+            "`start_from`; omit both to start a fresh adapter from the LoRA settings."
+        ),
+    )
     args = parser.parse_args()
     cfg = load_config(args.config)
+
+    adapter = args.adapter or cfg.get("start_from")
 
     model_cfg = cfg["model"]
     data_cfg = cfg["data"]
@@ -47,12 +96,12 @@ def main() -> None:
         rows = rows[: int(max_samples)]
 
     print(f"[info] prompts={len(rows)} -> {out_dir}")
-    print("[warn] GRPO on 8GB: keep num_generations and completion length small.")
+    print("[warn] keep gradient_checkpointing=false; see the note in the YAML.")
 
     import torch
     from datasets import Dataset
     from peft import LoraConfig
-    from transformers import AutoModelForCausalLM, AutoTokenizer
+    from transformers import AutoModelForCausalLM, AutoTokenizer, TrainerCallback
     from trl import GRPOConfig, GRPOTrainer
 
     model_name = model_cfg["model_name_or_path"]
@@ -68,14 +117,43 @@ def main() -> None:
     model = AutoModelForCausalLM.from_pretrained(model_name, **model_kwargs)
     model.config.use_cache = False
 
-    # TRL GRPO expects a "prompt" column; keep "answer" for reward
+    if adapter:
+        from peft import PeftModel
+
+        # is_trainable=True is required, see the note in scripts/train_dpo.py:
+        # the default leaves the optimizer empty and training silently no-ops.
+        model = PeftModel.from_pretrained(model, adapter, is_trainable=True)
+        print(f"[info] continuing from adapter: {adapter}")
+
+        # Only meaningful on this path. When TRL attaches a fresh LoRA itself, the
+        # count here would just be the (still unfrozen) base model.
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"[info] trainable parameters: {trainable:,}")
+        if trainable == 0:
+            raise RuntimeError(
+                "No trainable parameters. The optimizer would be empty and training "
+                "would silently do nothing. Check the adapter / LoRA configuration."
+            )
+
+    reset_peak_stats()
+
+    # TRL applies the chat template only when the prompt is conversational (a list
+    # of messages) — see `maybe_apply_chat_template` in grpo_trainer.py. Passing a
+    # raw string makes an Instruct model continue plain text instead of answering:
+    # every completion then runs to max_completion_length, scores 0, and GRPO gets
+    # zero advantage (loss 0.0, grad_norm 0.0) while looking perfectly healthy.
     dataset = Dataset.from_list(
-        [{"prompt": r["prompt"], "answer": r["answer"]} for r in rows]
+        [
+            {"prompt": [{"role": "user", "content": r["prompt"]}], "answer": r["answer"]}
+            for r in rows
+        ]
     )
 
     lora = cfg.get("lora") or {}
     peft_config = None
-    if lora.get("enabled"):
+    if adapter:
+        print("[info] adapter given -> peft_config=None (keep training the loaded adapter)")
+    elif lora.get("enabled"):
         peft_config = LoraConfig(
             r=int(lora.get("r", 8)),
             lora_alpha=int(lora.get("alpha", 16)),
@@ -84,7 +162,12 @@ def main() -> None:
             task_type="CAUSAL_LM",
         )
 
-    reward_fn = accuracy_reward if grpo_cfg.get("reward_function", "accuracy") == "accuracy" else accuracy_reward
+    # The config only ships one reward today; keep the lookup explicit so adding a
+    # second one is a real change rather than a silent fallback.
+    reward_name = grpo_cfg.get("reward_function", "accuracy")
+    if reward_name != "accuracy":
+        raise ValueError(f"Unknown reward_function: {reward_name!r} (only 'accuracy')")
+    reward_fn = accuracy_reward
 
     config = GRPOConfig(
         output_dir=str(out_dir),
@@ -112,11 +195,22 @@ def main() -> None:
         train_dataset=dataset,
         peft_config=peft_config,
         processing_class=tokenizer,
+        callbacks=[build_zero_signal_guard(TrainerCallback)],
     )
     result = trainer.train()
+    vram = peak_vram_gb()
+    print(f"[info] peak VRAM: {format_peak_vram()}")
     trainer.save_model(str(out_dir / "final"))
-    (out_dir / "train_metrics.txt").write_text(str(result.metrics), encoding="utf-8")
-    print(f"[done] {out_dir / 'final'}")
+    metrics_path = out_dir / "train_metrics.txt"
+    metrics_path.write_text(str(result.metrics) + "\n" + format_peak_vram() + "\n", encoding="utf-8")
+    print(f"[done] model   -> {out_dir / 'final'}")
+    print(f"[done] metrics -> {metrics_path}")
+    if vram:
+        print(
+            f"[hint] record into {out_dir.parent / 'notes.md'}:\n"
+            f"       peak_allocated={vram['peak_allocated_gb']} GB, "
+            f"peak_reserved={vram['peak_reserved_gb']} GB"
+        )
 
 
 if __name__ == "__main__":

@@ -63,6 +63,7 @@ Local open-source references (not vendored as our code):
 |--------|-------|--------|-----------|---------------|-------|
 | 2026-09-sft-baseline | Qwen2.5-0.5B-Instruct | SFT+LoRA r=16 | 1.87 GB allocated / 4.89 GB reserved | train_loss 1.39, 345 s | first baseline + base-vs-LoRA generation comparison |
 | 2026-09-dpo-from-sft | Qwen2.5-0.5B-Instruct | DPO (continues the SFT adapter) | 2.76 GB allocated / 3.56 GB reserved | preference accuracy 0.455 (chance = 0.5), 336 s | no measurable preference gain; surfaced a silent no-op training bug |
+| 2026-09-grpo-math | Qwen2.5-0.5B-Instruct | GRPO + verifiable reward | 1.22 GB allocated / 1.49 GB reserved | held-out 88/100 vs 87/100 base, 286 s | pipeline works but the +1 is noise (churn); found that gradient checkpointing corrupts GRPO generation |
 
 ## Limitations
 
@@ -75,7 +76,7 @@ Local open-source references (not vendored as our code):
 - [x] Repo skeleton + 8GB SFT config
 - [x] SFT baseline on local Qwen weights
 - [x] DPO small run + preference data slice
-- [ ] GRPO + verifiable math reward ablation
+- [x] GRPO + verifiable math reward ablation
 - [x] Memory estimate utility + tests
 - [x] Write `docs/8gb-memory-guide.md` from measured numbers
 

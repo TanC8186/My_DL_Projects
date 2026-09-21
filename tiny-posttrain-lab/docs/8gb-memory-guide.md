@@ -11,7 +11,23 @@
 |------|------|------|-----|-------------|----------------|---------------|------|
 | SFT baseline | Qwen2.5-0.5B | LoRA r=16 + grad ckpt | 512 | 1 / 8 | **1.87 GB** | **4.89 GB** | 345 s (250 步) |
 | DPO | Qwen2.5-0.5B | 续 SFT adapter，beta=0.1 | 512 | 1 / 8 | **2.76 GB** | **3.56 GB** | 336 s (125 步) |
+| GRPO | Qwen2.5-0.5B | 可验证 reward，num_gen=4 | 128+192 | 1 / 4 | **1.22 GB** | **1.49 GB** | 286 s (400 步) |
 | 推理（base 或 +LoRA） | Qwen2.5-0.5B | bf16, max_new_tokens=128 | — | 1 | **0.94–0.95 GB** | **1.00 GB** | — |
+
+### ⚠️ GRPO 不要开 gradient checkpointing
+
+TRL 的 `GRPOTrainer` 会调用 `gradient_checkpointing_enable()` 和
+`enable_input_require_grads()`，但**从不在生成前关掉**。实测后果：
+
+| 模型状态 | 生成长度 | 命中 EOS | 输出 |
+|----------|---------|---------|------|
+| + LoRA / train | 4 | ✅ | `'476'` |
+| + LoRA / train / **gradient_checkpointing** | **192** | ❌ | 乱码，永不结束 |
+
+生成被污染 → 奖励恒为 0 → GRPO 完全没有学习信号，而 `loss`/`grad_norm` 都显示 0.0，
+看起来像"训练很稳定"。**关掉它即可**：0.5B + LoRA 训练峰值仅 1.22 GB，8G 上根本不需要。
+关掉后生成速度还快约 17 倍（原本没有 KV cache，是 O(n²)）。详见
+`experiments/2026-09-grpo-math/notes.md`。
 
 ### 从实测里学到的三件事
 

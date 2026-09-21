@@ -84,13 +84,15 @@ def main() -> None:
         model = PeftModel.from_pretrained(model, adapter, is_trainable=True)
         print(f"[info] continuing from adapter: {adapter}")
 
-    trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"[info] trainable parameters: {trainable:,}")
-    if trainable == 0:
-        raise RuntimeError(
-            "No trainable parameters. The optimizer would be empty and training "
-            "would silently do nothing. Check the adapter / LoRA configuration."
-        )
+        # Only meaningful on this path. When TRL attaches a fresh LoRA itself, the
+        # count here would just be the (still unfrozen) base model.
+        trainable = sum(p.numel() for p in model.parameters() if p.requires_grad)
+        print(f"[info] trainable parameters: {trainable:,}")
+        if trainable == 0:
+            raise RuntimeError(
+                "No trainable parameters. The optimizer would be empty and training "
+                "would silently do nothing. Check the adapter / LoRA configuration."
+            )
 
     reset_peak_stats()
 
