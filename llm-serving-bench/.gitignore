@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+models/
+*.gguf
+*.safetensors
+*.bin
+*.pt
+results/**/*.parquet
+experiments/**/output/
+*.log
+.DS_Store
+Thumbs.db

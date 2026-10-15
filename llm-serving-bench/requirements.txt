@@ -1,0 +1,18 @@
+# Optional deps for Part 2 (serving bench)
+# Install after finishing tiny-posttrain-lab basics.
+
+# Core
+pandas>=2.0.0
+numpy>=1.26.0
+pyyaml>=6.0
+tqdm>=4.66.0
+
+# Phase A: llama.cpp server bindings (optional)
+# llama-cpp-python>=0.3.0   # install only if you use Python API; CLI also works
+
+# Phase B: HF generate baseline (reuse torch/transformers from train env or install)
+# torch
+# transformers>=4.46.0
+
+# Phase C: vLLM — often tight on 8GB; install only when ready
+# vllm  # platform/CUDA dependent

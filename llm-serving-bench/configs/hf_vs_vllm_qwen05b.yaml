@@ -1,0 +1,23 @@
+# Phase B/C sketch — HF generate vs vLLM (open after Phase A notes exist)
+
+experiment_id: 2026-xx-hf-vs-vllm-wip
+status: wip-do-not-run-yet
+
+hf:
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  max_new_tokens: 128
+  batch_size: 1
+
+vllm:
+  enabled: false            # enable only after Phase A + VRAM check
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  gpu_memory_utilization: 0.85
+  max_model_len: 512
+
+bench:
+  prompts_file: E:/My_DL_Projects/llm-serving-bench/configs/prompts_sample.jsonl
+  output_csv: E:/My_DL_Projects/llm-serving-bench/results/hf_vs_vllm.csv
+
+8gb_warning: >
+  vLLM on 8GB with 0.5B is sometimes OK at short context; 1.5B+ often OOM.
+  Always record peak VRAM. llama.cpp remains the reliable baseline.

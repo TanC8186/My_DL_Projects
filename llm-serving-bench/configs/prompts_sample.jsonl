@@ -1,0 +1,8 @@
+{"prompt": "Explain PagedAttention in two sentences."}
+{"prompt": "What is continuous batching in LLM serving?"}
+{"prompt": "Write a Python function to compute token throughput."}
+{"prompt": "Summarize why KV cache uses a lot of GPU memory."}
+{"prompt": "What is quantization? Mention one quality-speed tradeoff."}
+{"prompt": "Explain TTFT vs tokens per second for inference."}
+{"prompt": "List two reasons RL training uses vLLM for rollout."}
+{"prompt": "What is prefix caching in serving systems?"}

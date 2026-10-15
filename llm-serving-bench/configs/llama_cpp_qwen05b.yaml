@@ -1,0 +1,23 @@
+# Phase A — llama.cpp GGUF on 8GB laptop
+# Place model under E:/My_DL_Projects/llm-serving-bench/models/
+
+engine: llama_cpp
+experiment_id: 2026-xx-llama-cpp-baseline
+
+model:
+  # Download a small instruct GGUF, e.g. Qwen2.5-0.5B-Instruct Q4_K_M
+  gguf_path: E:/My_DL_Projects/llm-serving-bench/models/qwen2.5-0.5b-instruct-q4_k_m.gguf
+  n_ctx: 512
+  n_gpu_layers: 99          # offload as many layers as VRAM allows
+  n_threads: 8
+
+bench:
+  prompts_file: E:/My_DL_Projects/llm-serving-bench/configs/prompts_sample.jsonl
+  max_tokens: 128
+  temperature: 0.0
+  repeat: 3
+  output_csv: E:/My_DL_Projects/llm-serving-bench/results/llama_cpp_baseline.csv
+
+notes:
+  on_8gb: Preferred first serving engine. Quality/speed tradeoff via quant level.
+  if_slow: Lower n_gpu_layers or use smaller quant / smaller n_ctx.
