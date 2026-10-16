@@ -1,4 +1,4 @@
-# Local 8GB lab — install on Windows PowerShell
+# Local 8GB lab - install on Windows PowerShell
 # Tested working combo (2026-09 baseline on RTX 4060 Laptop 8GB):
 #   Base: conda env dl_env (Python 3.10) + torch 2.5.1+cu124
 #   venv: python -m venv .venv --system-site-packages  (reuse local CUDA torch)
@@ -8,9 +8,15 @@
 #   $env:USE_FLAX = "0"
 #   $env:HF_ENDPOINT = "https://hf-mirror.com"   # optional, CN network
 #
-# Do NOT install transformers 5.x / trl 1.x together on this machine —
+# Do NOT install transformers 5.x / trl 1.x together on this machine -
 # `from trl import SFTTrainer` can hard-crash (0xC0000005).
 # Also avoid importing a broken TensorFlow inside dl_env (NumPy 2.x conflict).
+#
+# NOTE: this file is deliberately ASCII-only. It used to contain em-dashes in
+# the comments, and pip on a CN Windows locale (GBK) crashed while *reading*
+# the file, before installing anything:
+#   UnicodeDecodeError: 'gbk' codec can't decode byte 0x94 in position 18
+# Keep it ASCII so `pip install -r requirements.txt` works on any locale.
 
 transformers==4.55.2
 datasets==3.6.0
@@ -22,7 +28,13 @@ pandas>=2.0.0
 numpy>=1.26.0
 tqdm>=4.66.0
 
+# Test tooling. pytest imports pygments at startup; without it collection dies
+# with `ModuleNotFoundError: No module named 'pygments'`. Neither comes in via
+# the torch stack, so list them here rather than relying on the dev extra.
+pytest>=8.0.0
+pygments>=2.10.0
+
 # Optional / platform-sensitive:
-# bitsandbytes>=0.43.0   # 4-bit QLoRA; may fail on Windows — see README
+# bitsandbytes>=0.43.0   # 4-bit QLoRA; may fail on Windows - see README
 # flash-attn             # optional; needs matching CUDA/torch
 # tensorboard            # if report_to: ["tensorboard"]
