@@ -1,6 +1,7 @@
 # 08 · 测试
 
-这一篇讲 `tests/` 下四个文件，共 **18 个测试**。它们的共同特点是
+这一篇讲 `tests/` 下四个文件，共 **19 个测试**（结构契约 6 + 核心逻辑 3 +
+CPU 安全性 3 + 数据正确性 7）。它们的共同特点是
 **全部不需要 GPU，全部在 2~10 秒内跑完**。
 
 ---
@@ -67,16 +68,70 @@ sys.path.insert(0, str(ROOT / "src"))
 
 ### 引导段
 
-**和 `scripts/*.py` 里的一样**（见 [04 篇](./04-train-sft.md)）——
-把 `src/` 加入 `sys.path`，让 `my_lab` 可导入。
+这里原来是这四行（把 `src/` 加入 `sys.path`），**现在只保留前两行**：
 
-**`ROOT = ...parents[1]`**：`tests/test_project_files.py` → `parents[0]` 是 `tests/`，
-`parents[1]` 是项目根。
+```python
+from pathlib import Path
 
-**为什么每个测试文件都重复这段？** 因为没有 `conftest.py`。
-pytest 支持用 `conftest.py` 统一做路径设置，那样更 DRY。
-**当前的写法更直白**（每个文件自包含，不依赖 pytest 的特定机制），
-代价是重复。
+ROOT = Path(__file__).resolve().parents[1]
+# sys.path.insert(0, str(ROOT / "src"))   <- 已移除，见下
+```
+
+**为什么移除了？** 因为 `pyproject.toml` 现在统一声明了导入根：
+
+```toml
+[tool.pytest.ini_options]
+pythonpath = ["src", "scripts"]
+```
+
+pytest 会在收集测试**之前**把这两个目录加到 `sys.path`，
+所以每个测试文件不再需要自己 insert。
+
+> **`ROOT = ...parents[1]`**：`tests/test_project_files.py` → `parents[0]` 是 `tests/`，
+> `parents[1]` 是项目根。这个 `ROOT` 后面还要用来定位 `configs/`、`docs/`、`data/`，
+> 所以即使不再 insert `sys.path`，它仍然需要保留。
+
+#### 为什么改：一个真实的"测试靠运气通过"的 bug
+
+原来的设计是**每个测试文件各自 insert**（本节旧版解释为"因为没有 conftest.py，
+自包含更直白，代价是重复"）。这个选择埋了一个后果：
+
+`test_project_files.py` 和 `test_math_dataset.py` **有** insert，
+但 `test_vram.py` 和 `test_rewards_and_memory.py` **没有** ——
+它们直接 `from my_lab...`，却能通过。
+
+原因是 **pytest 按文件名字母序收集**：
+
+```text
+test_math_dataset.py        ← 有 insert（scripts/）
+test_project_files.py       ← 有 insert（src/）   ← 把 src/ 泄漏进解释器
+test_rewards_and_memory.py  ← 没有 insert，但蹭到了上一步的 src/
+test_vram.py                ← 同上
+```
+
+`sys.path` 是**进程级全局状态**，一旦被前一个文件改动，
+后面所有文件都受影响。所以这两个文件**不是"能导入"，而是"碰巧轮到了"**。
+
+实测（修复前）：
+
+```text
+pytest tests/test_vram.py -q                    -> ModuleNotFoundError: No module named 'my_lab'
+pytest tests/test_vram.py tests/... -- 倒序      -> 2 errors
+pytest tests -q --ignore=tests/test_project_files.py -> 2 errors
+```
+
+**只要换一个收集顺序，全套测试就崩。** 而默认的字母序恰好让它一直是绿的。
+
+#### 这个 bug 的教训
+
+> **测试之间通过 `sys.path` 这类全局状态互相依赖，是一种隐式的执行顺序耦合。**
+> 它的危险不在于"会坏"，而在于**默认顺序下永远是绿的** ——
+> 你会一直以为它是好的，直到某天换了个运行方式。
+
+修法是把路径声明**上移到配置层**（`pyproject.toml`），
+让所有测试在**同一个确定的起点**上运行，而不是靠谁先谁后。
+
+**验证**：修完后 `test_vram.py` 单独跑 3 passed，倒序跑 19 passed。
 
 ### `test_import_my_lab`
 
@@ -200,6 +255,44 @@ def test_every_experiment_has_notes():
 
 > **这是一个容易被忽略的测试陷阱**：遍历式的断言在集合为空时
 > 会无条件通过。**需要显式检查集合非空。**
+
+### `test_walkthrough_is_complete`
+
+```python
+def test_walkthrough_is_complete():
+    """The walkthrough is linked as a numbered series, so a missing part is a broken chain."""
+    walkthrough = ROOT / "docs" / "walkthrough"
+    expected = ["00-index.md", "01-environment.md", ..., "09-experiments.md"]
+    missing = [name for name in expected if not (walkthrough / name).exists()]
+    assert not missing, f"walkthrough parts missing: {missing}"
+
+    # Every part except the index should be linked from the index, and the index
+    # should link to every other part, otherwise the series is not navigable.
+    index = (walkthrough / "00-index.md").read_text(encoding="utf-8")
+    unlinked = [name for name in expected[1:] if f"./{name}" not in index]
+    assert not unlinked, f"walkthrough parts not linked from the index: {unlinked}"
+```
+
+**测什么？** 两件事，缺一不可：
+
+1. **每个 part 文件都存在**（`expected` 列表里 10 个）
+2. **`00-index.md` 链接了其余 9 个**（用 `./01-environment.md` 这种相对路径）
+
+**为什么这两个断言要一起写？**
+
+只查"文件存在"是不够的 —— 文件在，但如果 index 忘了链它，
+读者从 00 开始读就**永远走不到那一篇**。系列文档的价值在于**可导航**，
+所以"存在"和"可达"是两个独立的失败模式，必须分别断言。
+
+**为什么这条测试值得存在？**
+
+因为它守的是**上一节那条测试的同类问题**：文档漂移。
+`expected` 是硬编码的列表，所以**重命名任何一个 part 都会立刻让测试红**，
+而不是等到某个读者发现 404。
+
+**实测效果**：这条测试确实抓到过东西 —— `08-tests.md` 自己
+（也就是本文件）在很长一段时间里只写了 18 个测试，
+漏掉的正是这一条。**测试守住了别的文档，但没人守这个文档自己。**
 
 ---
 

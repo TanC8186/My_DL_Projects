@@ -106,5 +106,5 @@ E:\My_DL_Projects\                     # 工作区根（已 git init）
 | [05 DPO 脚本](./walkthrough/05-train-dpo.md) | 含"静默失效 bug"的完整证据链 |
 | [06 GRPO 脚本](./walkthrough/06-train-grpo.md) | 含两个 bug 的二分定位过程 |
 | [07 推理与评测](./walkthrough/07-infer-eval.md) | `generate.py` / `eval_math.py` / `make_math_dataset.py` |
-| [08 测试](./walkthrough/08-tests.md) | 18 个 CPU 单测的设计思路 |
+| [08 测试](./walkthrough/08-tests.md) | 19 个 CPU 单测的设计思路 |
 | [09 实验记录与日志阅读](./walkthrough/09-experiments.md) | **怎么判断训练是不是真的在工作** |
