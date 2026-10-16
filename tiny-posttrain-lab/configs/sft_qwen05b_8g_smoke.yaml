@@ -1,0 +1,50 @@
+# Smoke-test config: prove the full SFT path works with 8 samples.
+# Purpose: falsify the pipeline cheaply before spending ~6 min on the real run.
+# Run: python scripts/train_sft.py --config configs/sft_qwen05b_8g_smoke.yaml
+
+experiment_id: smoke-sft
+method: sft
+notes: 8-sample smoke test. Only proves the pipeline runs end to end.
+
+model:
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  torch_dtype: bfloat16
+  load_in_4bit: false
+  attn_implementation: sdpa
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+data:
+  dataset_name: yahma/alpaca-cleaned
+  dataset_split: train
+  max_samples: 8           # tiny on purpose
+  max_seq_length: 512
+  packing: false
+
+training:
+  # Deliberately outside experiments/: a smoke test is not an experiment.
+  # experiments/ folders are contract-checked by tests/test_project_files.py
+  # (every one needs notes.md), and a throwaway run should not have to satisfy
+  # that. .smoke-run/ is gitignored.
+  output_dir: E:/My_DL_Projects/tiny-posttrain-lab/.smoke-run/output
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  logging_steps: 1
+  save_steps: 200          # no mid-run checkpoint; save at end only
+  save_total_limit: 1
+  gradient_checkpointing: true
+  bf16: true
+  optim: adamw_torch
+  max_grad_norm: 1.0
+  report_to: []
+  seed: 42
+  resume_from_checkpoint: null

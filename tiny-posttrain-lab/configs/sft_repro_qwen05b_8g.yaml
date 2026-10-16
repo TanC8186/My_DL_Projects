@@ -1,0 +1,51 @@
+# 8GB-friendly SFT baseline (RTX 4060 Laptop 8GB)
+# Model path: local Qwen2.5-0.5B-Instruct under E:\My_DL_Projects\qwen\
+# Adjust model_path / dataset if your layout differs.
+
+experiment_id: 2026-10-sft-repro
+method: sft
+notes: First SFT baseline on 8GB laptop GPU. LoRA + short sequences.
+
+model:
+  # Prefer local weights to avoid re-download
+  model_name_or_path: E:/My_DL_Projects/qwen/Qwen2___5-0___5B-Instruct
+  torch_dtype: bfloat16
+  # Set true only if bitsandbytes works; 0.5B bf16 usually fits without 4bit
+  load_in_4bit: false
+  attn_implementation: sdpa  # use flash_attention_2 if installed
+
+lora:
+  enabled: true
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: [q_proj, k_proj, v_proj, o_proj]
+
+data:
+  # HF dataset id OR local json/jsonl path
+  dataset_name: yahma/alpaca-cleaned
+  # Optional local alternative:
+  # dataset_path: E:/My_DL_Projects/tiny-posttrain-lab/data/alpaca_sample.jsonl
+  dataset_split: train
+  max_samples: 2000          # keep runs short while learning
+  max_seq_length: 512        # critical for 8GB
+  packing: false
+
+training:
+  output_dir: E:/My_DL_Projects/tiny-posttrain-lab/experiments/2026-10-sft-repro/output
+  num_train_epochs: 1
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 8
+  learning_rate: 2.0e-4
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.03
+  logging_steps: 5
+  save_steps: 200
+  save_total_limit: 2
+  gradient_checkpointing: true
+  bf16: true
+  optim: adamw_torch
+  max_grad_norm: 1.0
+  report_to: []              # add "tensorboard" if you want curves
+  seed: 42
+  resume_from_checkpoint: null

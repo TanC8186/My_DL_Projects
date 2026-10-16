@@ -1,0 +1,2 @@
+{'train_runtime': 113.362, 'train_samples_per_second': 3.529, 'train_steps_per_second': 3.529, 'total_flos': 0.0, 'train_loss': -4.62768981175393e-11}
+peak_allocated=1.17 GB, peak_reserved=1.35 GB
