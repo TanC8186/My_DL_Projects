@@ -7,13 +7,11 @@ overlap (an earlier version used two independent seeds and leaked 16 prompts).
 
 import random
 import re
-import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
-
-from make_math_dataset import GENERATORS, build, split  # noqa: E402
+# `scripts/` is on sys.path via [tool.pytest.ini_options] pythonpath in
+# pyproject.toml -- no per-file insert, so collection order cannot change
+# the outcome, and the IDE can resolve the import below.
+from make_math_dataset import GENERATORS, build, split
 
 NUM = r"(\d+)"
 

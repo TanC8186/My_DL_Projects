@@ -25,6 +25,17 @@ dev = ["pytest>=8.0.0", "ruff>=0.6.0"]
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.pytest.ini_options]
+# Make both import roots explicit for every pytest run.
+#
+# Without this, tests that import `my_lab` (test_vram, test_rewards_and_memory)
+# only passed because test_project_files.py -- alphabetically first -- inserts
+# src/ into sys.path at module scope and leaks it to its siblings. Run either of
+# those two files alone and collection fails with ModuleNotFoundError.
+# Declaring the paths here removes that collection-order dependency and also
+# lets tooling (IDE test runners, pytest plugins) see where the code lives.
+pythonpath = ["src", "scripts"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"

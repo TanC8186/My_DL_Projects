@@ -1,10 +1,13 @@
 """Tiny offline checks for package import paths (no GPU)."""
 
 from pathlib import Path
-import sys
 
+# `src/` and `scripts/` are on sys.path via [tool.pytest.ini_options] pythonpath
+# in pyproject.toml. Do NOT insert here: a module-scope insert leaks into every
+# other collected test file, which makes the suite pass or fail depending on
+# collection order (test_vram.py and test_rewards_and_memory.py have no insert
+# of their own and used to rely on this one running first).
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
 
 
 def test_import_my_lab():
